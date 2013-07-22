@@ -20,6 +20,7 @@ class Sim(object):
 	response = []
 	outcome = []
 	network = hopfield.Hopfield()
+	W_coeff = np.array([.5, .5]) # Color, Word
 	tau = 1
 
 def reset_sim():
@@ -36,7 +37,7 @@ def reset_sim():
 def gen_stimulus(word, color):
 	""" Generate the stimulus state for word and color """
 	index = np.where((constants.words[word] + 
-			  		 constants.colors[color]) > 0 )
+			  		  constants.colors[color]) > 0 )
 	state = -np.ones(16)
 	state[index] = 1
 	return state
