@@ -20,7 +20,6 @@ class Sim(object):
 	response = []
 	outcome = []
 	network = hopfield.Hopfield()
-	W_coeff = [.5, .5] # Color, Word
 	tau = 1
 
 def reset_sim():
@@ -72,7 +71,7 @@ def give_cue(cue: ('word', 'color')):
 	""" Cues the model to one task. """
 	Sim.assumed_task = cue
 
-def run_trial(word, color):
+def run_trial(word, color, net_iters=200, net_temp=1):
 	""" Simulate one trial given the word and color. """
 	
 	network = Sim.network
@@ -86,7 +85,7 @@ def run_trial(word, color):
 	# Turns out you can fine tune the model with the number of iterations
 	# and the initial temperature.  You can basically get it to do really
 	# well or really poorly by adjusting these parameters.
-	network.run(200, init_temp=0.1)
+	network.run(net_iters, init_temp=net_temp)
 	response = network.state
 	Sim.response.append(response)
 
@@ -97,5 +96,10 @@ def run_trial(word, color):
 		outcome = (response == constants.words[word]).all()
 	Sim.outcome.append(outcome)
 
+#****************************************************************************#
 
+# Initialize the response network's weight matrix
+W_full = (Sim.W_coeff[0]*constants.W_ink + 
+		  Sim.W_coeff[1]*constants.W_wrd)
+Sim.network.W = W_full
 
