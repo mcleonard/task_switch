@@ -1,106 +1,165 @@
 """ Module for running the task switching simulation. """
 
+from collections import namedtuple
 import numpy as np
 
 import constants
 import hopfield
 
-color_change_coef = .03
-word_change_coef = .06
-coeff_upper_limit = 1
-coeff_lower_limit = 0
+Stimulus = namedtuple('Stimulus', ['word', 'color'])
+
+W_coeffs_init = np.array([0.06, 0.03]) # Word, Color
 
 class Sim(object):
 	""" This object is going to hold the important task variables and 
 		simulated results.
 	"""
-	actual_task = 'word'
-	assumed_task = 'word'
+	cue = []
 	stimulus = []
 	response = []
 	outcome = []
 	network = hopfield.Hopfield()
-	W_coeff = np.array([.5, .5]) # Color, Word
-	tau = 1
+	W_coeffs =  [] # Word, Color
 
 def reset_sim():
 	""" Reset the simulation. """
-	Sim.actual_task = 'word'
-	Sim.assumed_task = 'word'
+	Sim.cue = []
 	Sim.stimulus = []
 	Sim.response = []
 	Sim.outcome = []
 	Sim.network = hopfield.Hopfield()
-	Sim.W_coeff = np.array([.5, .5]) # Color, Word
-	Sim.tau = 1
+	Sim.W_coeffs = [] # Word, Color
+
+def random_stimuli(size=1, congruent=-1, neutral=-1):
+	""" Generate random word/color pairs. 
+
+		Parameters
+		----------
+		congruent:
+			1 for all congruent stimuli
+			0 for both congruent and incongruent stimuli
+			-1 for no congruent stimuli
+		neutral:
+			1 for all neutral stimuli
+			0 for both neutral and non-neutral stimuli
+			-1 for no neutral stimuli
+	"""
+
+	if neutral == 1:
+		colors = ['none']
+	elif neutral == 0:
+		colors = ['red', 'blue', 'green', 'none']
+	elif neutral == -1:
+		colors = ['red', 'blue', 'green']
+
+	if congruent == 1:
+		rand_colors = np.random.choice(colors, (1, size))
+		pairs = np.concatenate([rand_colors]*2).T
+	elif congruent == 0:
+		pairs = np.random.choice(colors, (2, size)).T
+	elif congruent == -1:
+		rand_colors = [np.random.choice(colors, (2,1), replace=False).T 
+				  	   for i in range(size)]
+		pairs = np.concatenate(rand_colors)
+
+	stimuli = [ Stimulus(*pair) for pair in pairs ]
+	return stimuli
 
 def gen_stimulus(word, color):
 	""" Generate the stimulus state for word and color """
 	index = np.where((constants.words[word] + 
 			  		  constants.colors[color]) > 0 )
-	state = -np.ones(16)
+	state = -np.ones(len(constants.words[word]))
 	state[index] = 1
 	return state
 
-def update_W(task: ('word', 'color') = None):
-	""" Update W matrix for the response network based on the cue. """
-	if task == 'color':
-		Sim.W_coeff[0] += color_change_coef
-		Sim.W_coeff[1] -= word_change_coef
-	elif Sim == 'word':
-		Sim.W_coeff[0] -= color_change_coef
-		Sim.W_coeff[1] += word_change_coef
+def update_W(word_rate=0.06, color_rate=0.03,
+			 trial_interval=1., prep_time=0, 
+			 word_limits=(0.05, 0.95),
+			 color_limits=(0.3, 0.7)):
+	
+	coeff_rates = np.array([word_rate, color_rate])
+	# Check the cue to see what we need to do
+	if Sim.cue[-1] == 'word':
+		coeffs_change = coeff_rates * np.array([1, -1])
+	elif Sim.cue[-1] == 'color':
+		coeffs_change =  coeff_rates * np.array([-1, 1])
 
-	# Make sure the coefficients are inside limits
-	for i, c in enumerate(Sim.W_coeff):
-		if c > coeff_upper_limit:
-			Sim.W_coeff[i] = coeff_upper_limit
-		elif c < coeff_lower_limit:
-			Sim.W_coeff[i] = coeff_lower_limit
+	if Sim.W_coeffs:
+		W_coeffs = Sim.W_coeffs[-1]
+	else:
+		W_coeffs = W_coeffs_init
+	
+	# Additive, maybe multiplcative would be better?  
+	# Or some other function?
+	new_coeffs = W_coeffs + (prep_time + trial_interval) * coeffs_change
 
-	W_full = (Sim.W_coeff[0]*constants.W_ink + 
-			  Sim.W_coeff[1]*constants.W_wrd)
+	# Make sure coefficients are within limits
+	if new_coeffs[0] > word_limits[1]:
+		new_coeffs[0] = word_limits[1]
+	elif new_coeffs[0] < word_limits[0]:
+		new_coeffs[0] = word_limits[0]
+
+	if new_coeffs[1] > color_limits[1]:
+		new_coeffs[1] = color_limits[1]
+	elif new_coeffs[1] < color_limits[0]:
+		new_coeffs[1] = color_limits[0]
+
+	Sim.W_coeffs.append(new_coeffs)
+
+	W_full = (new_coeffs[0] * constants.W_wrd +
+			  new_coeffs[1] * constants.W_clr )
 	Sim.network.W = W_full
-
-def random_stimuli(size=1):
-	""" Generate random word/color pairs. """
-	colors = ['red', 'blue', 'green']
-	pairs = np.random.choice(colors, (2, size)).T 
-	return pairs
 
 def give_cue(cue: ('word', 'color')):
 	""" Cues the model to one task. """
-	Sim.assumed_task = cue
+	Sim.cue.append(cue)
 
-def run_trial(word, color, net_iters=200, net_temp=1):
+def response_outcome(cue, word, color, response):
+	""" Check if the response is correct, wrong, or just a spurious state. """
+
+	# First, let's identify the response.
+	for states in [constants.colors, constants.words]:
+		for key, state in states.items():
+			if (response == state).all():
+				result = key
+
+	if 'result' in locals():
+		pass
+	else:
+		result = 'spurious'
+
+	# Now, let's get the expected result
+	if cue == 'word':
+		expected_result = word
+	elif cue == 'color':
+		expected_result = color
+
+	if result == 'spurious':
+		outcome = -1
+	elif result != expected_result:
+		outcome = 0
+	elif result == expected_result:
+		outcome = 1
+
+	Sim.outcome.append(outcome)
+
+	return outcome
+
+def run_trial(word, color, net_iters=30, net_temp=0.5):
 	""" Simulate one trial given the word and color. """
 	
 	network = Sim.network
 	stimulus = gen_stimulus(word, color)
 
 	# Keeping track of the stimulus
-	Sim.stimulus.append(stimulus)
+	Sim.stimulus.append((word, color))
 	
 	# Now get the response from the stimulus
 	network.state = stimulus
-	# Turns out you can fine tune the model with the number of iterations
-	# and the initial temperature.  You can basically get it to do really
-	# well or really poorly by adjusting these parameters.
-	network.run(net_iters, init_temp=net_temp)
+	network.run(n_iters=net_iters, init_temp=net_temp)
 	response = network.state
 	Sim.response.append(response)
+	outcome = response_outcome(Sim.cue[-1], word, color, response)
 
-	# Now see if the response was correct or not
-	if Sim.actual_task == 'color':
-		outcome = (response == constants.colors[color]).all()
-	elif Sim.actual_task == 'word':
-		outcome = (response == constants.words[word]).all()
-	Sim.outcome.append(outcome)
-
-#****************************************************************************#
-
-# Initialize the response network's weight matrix
-W_full = (Sim.W_coeff[0]*constants.W_ink + 
-		  Sim.W_coeff[1]*constants.W_wrd)
-Sim.network.W = W_full
-
+	return response, outcome
