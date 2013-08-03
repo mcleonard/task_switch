@@ -183,3 +183,16 @@ def run_trial(word, color, net_iters=30, net_temp=0.5):
 	outcome = response_outcome(Sim.cue[-1], word, color, response)
 
 	return response, outcome
+
+def run_simulation(num_trials=300, block_length=30):
+	sim.reset_sim()
+	stims = sim.random_stimuli(60, congruent=0)
+	sim.give_cue('word')
+	for ii, (word, color) in enumerate(stims):
+	    if ii%30==0:
+	        sim.give_cue('color')
+	    sim.update_W()
+	    response, outcome = sim.run_trial(word, color)
+	    if outcome == -1:
+	        sim.update_W()
+	        response, outcome = sim.run_trial(word, color)
