@@ -109,12 +109,12 @@ def update_W(word_rate=0.06, color_rate=0.03,
 	Sim.W_coeffs.append(new_coeffs)
 
 	# Trying out using relative coeffs
-	rel_coeffs = new_coeffs/np.sum(new_coeffs)
-	W = (rel_coeffs[0] * constants.W_wrd +
-	 		rel_coeffs[1] * constants.W_clr )
+	# rel_coeffs = new_coeffs/np.sum(new_coeffs)
+	# W = (rel_coeffs[0] * constants.W_wrd +
+	#  		rel_coeffs[1] * constants.W_clr )
 
-	# W = (new_coeffs[0] * constants.W_wrd +
-	# 		  new_coeffs[1] * constants.W_clr )
+	W = (new_coeffs[0] * constants.W_wrd +
+			  new_coeffs[1] * constants.W_clr )
 
 	# de-meanify the W matrix 
 	# This makes the thing work.  I'm not sure why yet.  Welcome to science.
