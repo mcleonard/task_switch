@@ -6,24 +6,31 @@ import hopfield as hf
 
 def setup():
 	net = hf.Hopfield()
-	mock_state = np.array([-])
+	mock_state = np.array([1,1,-1,1,1,-1,-1,1,-1,-1])
+
+def setup_trained_net():
+	net = hf.Hopfield()
+	mock_state = np.array([1,1,-1,1,1,-1,-1,1,-1,-1])
+	net.train(mock_state)
 
 def test_creation():
 	net = hf.Hopfield()
 	assert type(net) == hf.Hopfield
 
-@with_setup(setup)
+@with_setup(setup_trained_net)
 def test_net_update():
-	net.state = 
+	net.update()
 
 def test_net_run():
-	pass
+	net.state = mock_state
+
 
 def test_net_eq():
 	pass
 
 def test_net_train():
-	pass
+	try:
+		net.train(mock_state)
 
 def test_net_plot():
 	try:
