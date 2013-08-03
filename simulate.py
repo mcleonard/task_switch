@@ -111,9 +111,18 @@ def update_W(word_rate=0.06, color_rate=0.03,
 			  new_coeffs[1] * constants.W_clr )
 	Sim.network.W = W_full
 
-def give_cue(cue: ('word', 'color')):
+def give_cue(cue: ('word', 'color', 'switch')):
 	""" Cues the model to one task. """
-	Sim.cue.append(cue)
+	if cue == 'switch':
+		prev_cue = Sim.cue[-1]
+		if prev_cue == 'word':
+			new_cue = 'color'
+		elif prev_cue == 'color':
+			new_cue = 'word'
+
+		Sim.cue.append(new_cue)
+	else:
+		Sim.cue.append(cue)
 
 def response_outcome(cue, word, color, response):
 	""" Check if the response is correct, wrong, or just a spurious state. """
