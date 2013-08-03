@@ -8,7 +8,7 @@ import hopfield
 
 Stimulus = namedtuple('Stimulus', ['word', 'color'])
 
-W_coeffs_init = np.array([0.06, 0.03]) # Word, Color
+W_coeffs_init = np.array([0.5, 0.5]) # Word, Color
 
 class Sim(object):
 	""" This object is going to hold the important task variables and 
@@ -77,6 +77,7 @@ def update_W(word_rate=0.06, color_rate=0.03,
 			 trial_interval=1., prep_time=0, 
 			 word_limits=(0.05, 0.95),
 			 color_limits=(0.3, 0.7)):
+	""" Update the network's weight matrix W. """
 	
 	coeff_rates = np.array([word_rate, color_rate])
 	# Check the cue to see what we need to do
@@ -107,9 +108,19 @@ def update_W(word_rate=0.06, color_rate=0.03,
 
 	Sim.W_coeffs.append(new_coeffs)
 
-	W_full = (new_coeffs[0] * constants.W_wrd +
-			  new_coeffs[1] * constants.W_clr )
-	Sim.network.W = W_full
+	# Trying out using relative coeffs
+	rel_coeffs = new_coeffs/np.sum(new_coeffs)
+	W = (rel_coeffs[0] * constants.W_wrd +
+	 		rel_coeffs[1] * constants.W_clr )
+
+	# W = (new_coeffs[0] * constants.W_wrd +
+	# 		  new_coeffs[1] * constants.W_clr )
+
+	# de-meanify the W matrix 
+	# This makes the thing work.  I'm not sure why yet.  Welcome to science.
+	W = W - 0.5*np.tile(W.mean(axis=0), (16,1))
+
+	Sim.network.W = W
 
 def give_cue(cue: ('word', 'color', 'switch')):
 	""" Cues the model to one task. """
