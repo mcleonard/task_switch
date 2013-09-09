@@ -87,7 +87,7 @@ def flip_units(X, N=1):
 	return Y
 
 def sigmoid(x):
-	y = 1/(1 + np.exp(-x))
+	y = 1/(1. + np.exp(-x))
 	return y
 
 def plot_state(state, shape=None, fig_num=None):
