@@ -22,9 +22,10 @@ class Hopfield(object):
 
 	def update(self, tau=0.1):
 		""" Update all the units once. Tau is the temperature parameter.  """
-		
-		# First part of the update rule, take the sums
+
+		# Get the sums of W * states for each unit.
 		sums = np.dot(self.W, self.state)
+		# Get the probability that each unit is on.
 		ps = sigmoid(sums/tau)
 		# Then get the unit states, and change to {1, -1} from {1, 0}
 		new_state = (np.random.rand(len(self)) < ps)*2 - 1
