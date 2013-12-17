@@ -2,12 +2,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-def session_plot(Sim):
+def session_plot(records):
 	""" Create a plot of a simulated session. """
 
 	fig, ax1 = plt.subplots(figsize=(9,6))
 
-	outcomes = np.array(Sim.outcome)
+	outcomes = np.array(records.outcome)
 	good = np.where(outcomes==1)[0]
 	bad = np.where(outcomes==0)[0]
 	pause = np.where(outcomes==-1)[0]
@@ -23,17 +23,16 @@ def session_plot(Sim):
 	ax1.set_ylim((-1.1, 1.1))
 
 	colors = plt.cm.RdBu((50, 220))
-	labels = [r'c_color', r'c_word']
 	ax2 = ax1.twinx()
-	lines = ax2.plot(Sim.W_coeffs)
+	lines = ax2.plot(records.coeffs)
 	for line, color in zip(lines, colors):
 	    line.set_color(color)
 	ax2.set_ylabel('Coefficients')
 	ax2.set_ylim((-0.2,1.2))
 	ax2.set_xlim((-1,len(outcomes)))
-	_ = ax2.legend((r"$\displaystyle c_{word}$", 
-					r"$\displaystyle c_{color}$"), 
-					loc='lower right', fontsize=18)
+	ax2.legend((r"$\displaystyle c_{word}$", 
+				r"$\displaystyle c_{color}$"), 
+				loc='lower right', fontsize=18)
 
 def outcome_contours(x, y, hits, errors, hesitations):
 	""" Create some contour plots showing the proportion of outcomes. 

@@ -23,3 +23,7 @@ net = hopfield.Hopfield()
 for w in words:
 	net.train(words[w])
 W_wrd = net.W
+
+# Adding in neutral states, these aren't trained in the networks.
+colors.update({'none':np.array([-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,1,1,1])})
+words.update({'none':np.array([-1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,1])})

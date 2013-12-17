@@ -8,33 +8,33 @@ class Hopfield(object):
 	def __init__(self, state=None, W=None):
 		self.W = W	# Weight matrix
 		self.state = state
-		self.trained_states = 0
+		self._trained_states = 0
 		self.shape = None
 
 	def run(self, n_iters=30, init_temp=1):
 		""" Run the Hopfield network using simulated annealing. """
 		
 		for t in range(n_iters):
-			curr_temp = 0.15 + init_temp*np.exp(-t/5.)
+			curr_temp = 0.1 + init_temp*np.exp(-t/5.)
 			self.update(tau=curr_temp)
 
-		return self.state
+		return self
 
 	def update(self, tau=0.1):
-		""" Update all the units once. """
+		""" Update all the units once. Tau is the temperature parameter.  """
 		
-		# First part of the training rule, take the sums
+		# First part of the update rule, take the sums
 		sums = np.dot(self.W, self.state)
 		ps = sigmoid(sums/tau)
-		# Then take the threshold and change to 1, -1 from 1, 0
+		# Then get the unit states, and change to {1, -1} from {1, 0}
 		new_state = (np.random.rand(len(self)) < ps)*2 - 1
 		self.state = new_state
-		return self.state
+		return self
 
 	def train(self, Y):
 		""" Train the weight matrix W on input Y. """
 		
-		n = self.trained_states
+		n = self._trained_states
 
 		# This performs the actual Hebbian learning
 		new_W = np.array([ y.repeat(len(Y))*Y for y in Y])
@@ -45,18 +45,22 @@ class Hopfield(object):
 			old_W = self.W*n
 			self.W = 1/float(n+1) * (old_W + new_W)
 		
-		self.trained_states += 1
+		self._trained_states += 1
 		
 		# Make sure diagonal is 0
 		self.W = self.W - np.diag(self.W.diagonal())
+		return self
 
 	def plot(self, shape=None, fig_num=None):
+		""" Plot the network's state.  Returns the matplotlib axis. """
 		if shape is not None:
 			pass
 		elif self.shape is not None:
 			shape = self.shape
 		
-		plot_state(self.state, shape=shape, fig_num=fig_num)
+		ax = plot_state(self.state, shape=shape, fig_num=fig_num)
+
+		return ax
 
 	def __len__(self):
 		return len(self.state)
@@ -106,10 +110,12 @@ def plot_state(state, shape=None, fig_num=None):
 		shape = (1, len(state))
 
 	s = state.reshape(shape)
-	_ = ax.imshow(s, interpolation='nearest', cmap=plt.cm.gray)
-	_ = ax.set_xticks(np.arange(-0.5, -0.5+shape[1]))
-	_ = ax.set_yticks(np.arange(-0.5, -0.5+shape[0]))
-	_ = ax.set_xticklabels('')
-	_ = ax.set_yticklabels('')
-	_ = ax.grid(b=True, which='major', color='white', ls='-')
+	ax.imshow(s, interpolation='nearest', cmap=plt.cm.gray)
+	ax.set_xticks(np.arange(-0.5, -0.5+shape[1]))
+	ax.set_yticks(np.arange(-0.5, -0.5+shape[0]))
+	ax.set_xticklabels('')
+	ax.set_yticklabels('')
+	ax.grid(b=True, which='major', color='white', ls='-')
 	ax.tick_params(length=0)
+
+	return ax
